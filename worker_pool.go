@@ -17,6 +17,7 @@ var (
 	minWorkers  = flag.Int("min", 1, "Минимальное кол-во воркеров (>= 1)")
 	maxWorkers  = flag.Int("max", 10, "Максимальное кол-во воркеров (> min)")
 	jobChanSize = flag.Int("size", 2, "Размер канала для задач (>= 1)")
+	words       = []string{"Привет", "Мир", "Golang", "VK", "Конкурентность", "Каналы", "Воркеры", "Горутины"}
 )
 
 type WorkerPool struct {
@@ -170,7 +171,7 @@ func (wp *WorkerPool) gracefulShutdown(ctx context.Context, ctxCancel context.Ca
 	}()
 }
 
-func sendDataBurst(ctx context.Context, data []string, dataChan chan<- string) {
+func sendData(ctx context.Context, data []string, dataChan chan<- string) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("Попытка закрыть уже закрытый канал:", r)
@@ -219,13 +220,12 @@ func main() {
 
 	go pool.monitorLoad(ctx)
 
-	words := []string{"Привет", "Мир", "Golang", "VK", "Конкурентность", "Каналы", "Воркеры", "Горутины"}
 	dataString := make([]string, 0, len(words)**jobChanSize)
 	for i := 0; i < *jobChanSize; i++ {
 		dataString = append(dataString, words...)
 	}
 
-	sendDataBurst(ctx, dataString, pool.dataChan)
+	sendData(ctx, dataString, pool.dataChan)
 	pool.wg.Wait()
 	cancel()
 	time.Sleep(100 * time.Millisecond)
